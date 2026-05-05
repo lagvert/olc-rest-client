@@ -1,0 +1,8 @@
+export declare enum SearchParameterEntity {
+    DATARECORDS = "DATARECORDS",
+    DATASETS = "DATASETS",
+    CONTENTITEMS = "CONTENTITEMS",
+    CONTENTSETS = "CONTENTSETS",
+    JOBS = "JOBS",
+    JOBSETS = "JOBSETS"
+}

@@ -1,0 +1,43 @@
+{
+  "olcnr-connect-server": {
+    "url": {
+      "label": "URL",
+      "placeholder": "Base URL of a OL Connect server"
+    },
+    "name": {
+      "label": "Name",
+      "placeholder": "Name"
+    },
+    "username": {
+      "label": "Username"
+    },
+    "password": {
+      "label": "Password"
+    },
+    "ignorecer": {
+      "label": "Ignore certificate errors"
+    },
+    "showProgress": {
+      "label": "Show progress below nodes"
+    },
+    "server": {
+      "label": "Server",
+      "select-server": "Select OL Connect Server"
+    },
+    "change-server": {
+      "notification-message": "Found OL Connect Server in __length__ imported nodes. Do you want to change the OL Connect Server?",
+      "title": "Change OL Connect Server",
+      "change": "Change",
+      "nodes": "Select all"
+    },
+    "concurrentRate": {
+      "label": "Max concurrent requests"
+    }
+  },
+  "olconnect": {
+    "status": {
+      "ENODENOTFOUND": "Configuration Node \"__serverId__\" Not Found",
+      "ENODENOTMATCH": "Node Found but it's not a \"__nodeType__\" Configuration Node"
+    }
+  }
+}

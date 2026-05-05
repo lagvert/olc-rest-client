@@ -1,0 +1,10 @@
+import { SearchParameterSearch } from "./SearchParameterSearch";
+import { SearchParameterSearchRuleDoclength } from "./SearchParameterSearchRuleDoclength";
+import { SearchParameterSearchRuleFinishing } from "./SearchParameterSearchRuleFinishing";
+import { SearchParameterSearchRuleIn } from "./SearchParameterSearchRuleIn";
+import { SearchParameterSearchRuleMultiProperty } from "./SearchParameterSearchRuleMultiProperty";
+import { SearchParameterSearchRuleMultiValue } from "./SearchParameterSearchRuleMultiValue";
+import { SearchParameterSearchRuleSingleProperty } from "./SearchParameterSearchRuleSingleProperty";
+import { SearchParameterSearchRuleSingleValue } from "./SearchParameterSearchRuleSingleValue";
+import { SearchParameterSearchRuleTemplate } from "./SearchParameterSearchRuleTemplate";
+export type SearchParameterSearchRule = SearchParameterSearchRuleSingleValue | SearchParameterSearchRuleMultiValue | SearchParameterSearchRuleSingleProperty | SearchParameterSearchRuleMultiProperty | SearchParameterSearchRuleIn | SearchParameterSearchRuleFinishing | SearchParameterSearchRuleDoclength | SearchParameterSearchRuleTemplate | SearchParameterSearch;

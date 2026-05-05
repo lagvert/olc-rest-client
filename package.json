@@ -1,0 +1,95 @@
+{
+    "name": "@objectif-lune/connect-rest-client",
+    "version": "1.0.1",
+    "description": "OL Connect REST call implementation",
+    "main": "./dist/index.js",
+    "types": "./dist/@types/index.d.ts",
+    "author": "Upland Software Inc.",
+    "scripts": {
+        "init": "npm install && npm run build",
+        "test": "mocha --config test/.mocharc.json",
+        "test:coverage": "nyc --reporter=text-summary --exclude=test/** --exclude=dist/** npm run test",
+        "test:report": "nyc --reporter=html --exclude=test/** --exclude=dist/** npm run test && open-cli ./coverage/index.html",
+        "start": "ts-node cli\\handshake.ts",
+        "clean": "rimraf -g tsconfig*.tsbuildinfo dist test/output @types *.tgz",
+        "uninstall-all": " rimraf package-lock.json node_modules",
+        "build": "npm run lint && rollup -c",
+        "check": "npm run lint && rollup -c && npm run test",
+        "lint": "eslint",
+        "lint:fix": "eslint --fix",
+        "buildserver:build": "tsc --project ./tsconfig-ci.json && npm run buildserver:lint",
+        "buildserver:lint": "eslint --rule prettier/prettier:error --rule simple-import-sort/imports:off --rule simple-import-sort/exports:off src --ext .ts",
+        "prettier": "prettier  ./**/*.ts --write",
+        "prettier:check": "prettier  --check ./**/*.ts",
+        "prebuildserver": "npm install && npm run clean && npm run test-jenkins",
+        "buildserver": "npm version patch && npm run buildserver:build && npm run test-jenkins && npm pack",
+        "test-jenkins": "mocha --reporter xunit",
+        "stylelint": "stylelint  ./**/*.scss --allow-empty-input --fix"
+    },
+    "node-red": {
+        "version": ">=4.0.9",
+        "nodes": {
+            "olcnr-connect-server": "./dist/nodes/config-connect-server/ConfigConnectServer.js"
+        }
+    },
+    "devDependencies": {
+        "@types/chai": "4.3.16",
+        "@types/follow-redirects": "1.14.4",
+        "@types/mocha": "10.0.10",
+        "@types/node": "20.14.8",
+        "@typescript-eslint/parser": "8.35.0",
+        "chai": "4.5.0",
+        "eslint": "9.17.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-import": "2.31.0",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "eslint-plugin-promise": "7.2.1",
+        "eslint-plugin-redos-detector": "3.1.1",
+        "eslint-plugin-simple-import-sort": "12.1.1",
+        "mocha": "11.0.1",
+        "nock": "14.0.5",
+        "prettier": "3.4.2",
+        "rimraf": "5.0.10",
+        "ts-node": "10.9.2",
+        "typescript": "5.7.2",
+        "typescript-eslint": "8.18.2"
+    },
+    "dependencies": {
+        "@objectif-lune/core": "1.0.1",
+        "async-sema": "3.1.1",
+        "express-validator": "7.2.1",
+        "follow-redirects": "1.15.9"
+    },
+    "engines": {
+        "node": ">=20.19.5"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://bitbucket.org/uplandsoftware/node-red-nodes.git"
+    },
+    "keywords": [
+        "node-red",
+        "OL-Connect",
+        "REST"
+    ],
+    "contributors": [
+        {
+            "name": "Erik van den Heuvel"
+        },
+        {
+            "name": "Harry de Kroon"
+        },
+        {
+            "name": "Matthew Lee"
+        },
+        {
+            "name": "Wei Fan"
+        },
+        {
+            "name": "Ahmed Ghorab"
+        }
+    ],
+    "private": false,
+    "license": "MIT"
+}
