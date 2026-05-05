@@ -1,20 +1,18 @@
 'use strict';
 
-// 2012-04-28T14:00:00.000Z
-const DATEFORMAT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/;
-const FLOATFORMAT = /^\d*(\.\d*)?$/;
-const INTEGERFORMAT = /^\d+$/;
+// Patched: pass values through untouched. The upstream version applied
+// regex-based smart-coercion (INTEGERFORMAT/FLOATFORMAT/DATEFORMAT) and
+// converted strings to Number/Date. That destroyed:
+//   - 44-char DMC barcode codes (Number.MAX_SAFE_INTEGER overflow)
+//   - "00000000"-style padded IDs (became Number(0), leading zeros lost)
+//   - "021246535"-style sequence numbers (padding lost)
+//   - Date strings not exactly matching the regex (became plain strings)
+// API spec defines value as type "string" — coercion violates the contract.
+// Consumers convert if needed.
 function flattenNameValueList(nameValueList) {
     const result = Object.create(null);
     nameValueList.forEach((nameValueItem) => {
-        const v = nameValueItem.value;
-        result[nameValueItem.name] = DATEFORMAT.test(v)
-            ? new Date(Date.parse(v))
-            : FLOATFORMAT.test(v)
-                ? Number.parseFloat(v)
-                : INTEGERFORMAT.test(v)
-                    ? Number.parseInt(v)
-                    : v;
+        result[nameValueItem.name] = nameValueItem.value;
     });
     return result;
 }
