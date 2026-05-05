@@ -18,7 +18,7 @@ class DocumentSetEntityService extends ConnectService.ConnectService {
     }
     // com.objectiflune.serverengine.rest.database.DocumentSetEntityRestService.updateMetadata(long, String)
     updateDocumentSetMetadata(documentSetId, properties) {
-        return this.updateProperties(documentSetId, properties, `update metadata for DS ${documentSetId}`, DOCUMENT_SETS_PATH, [documentSetId]);
+        return this.updateProperties(documentSetId, properties, `update metadata for DS ${documentSetId}`, DOCUMENT_SETS_PATH, [documentSetId, "metadata"]);
     }
 }
 
