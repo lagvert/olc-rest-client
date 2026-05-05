@@ -73,4 +73,3 @@ The fork modifications are listed in `CHANGELOG.md`. To compare with upstream: `
 ## Caveats
 
 - This fork is shipped as compiled `dist/` only. There is no TypeScript source repository — patches were applied directly to the compiled JS by inspecting the bundled output.
-- node-red integration files (`dist/nodes/`) have been removed because they were not relevant for our use case.

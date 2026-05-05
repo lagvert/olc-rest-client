@@ -1,0 +1,399 @@
+<script type="text/html" data-template-name="OL Connect Server">
+<style type="text/css">
+.red-ui-editor .form-row label:not(.unset-max-width):first-of-type{width:27%;max-width:130px}.red-ui-tray #node-config-dialog-edit-form{height:calc(100% - 22px) !important}
+</style>
+  <div class="form-row">
+    <label for="node-config-input-url">
+      <i class="fa fa-bookmark"></i>
+      <span data-i18n="olcnr-connect-server.url.label">Url</span>
+    </label>
+    <input type="text" id="node-config-input-url" data-i18n="[placeholder]olcnr-connect-server.url.placeholder">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-username">
+      <i class="fa fa-user"></i>
+      <span data-i18n="olcnr-connect-server.username.label">Username</span>
+    </label>
+    <input type="text" id="node-config-input-username">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-password">
+      <i class="fa fa-key"></i>
+      <span data-i18n="olcnr-connect-server.password.label">Password</span>
+    </label>
+    <input type="password" id="node-config-input-password">
+  </div>
+
+  <div class="form-row">
+    <label for="node-config-input-concurrentRate" style="width: 40%;max-width: 192px;">
+      <i class="fa fa-sort-numeric-asc"></i>
+      <span data-i18n="olcnr-connect-server.concurrentRate.label"></span>
+    </label>
+    <input type="number" id="node-config-input-concurrentRate" style="width: 16%;" min="15" max="100" step="1">
+  </div>
+
+  <div class="form-row">
+    <input type="checkbox" id="node-config-input-ignorecer" style="display: inline-block; width: auto; vertical-align: top;" autocomplete="off">
+    <label for="node-config-input-ignorecer" style="width: auto" class="unset-max-width" data-i18n="olcnr-connect-server.ignorecer.label">Ignore certificate errors</label>
+  </div>
+	 
+  <div class="form-row">
+    <input type="checkbox" id="node-config-input-showProgress" style="display: inline-block; width: auto; vertical-align: top;" autocomplete="off">
+    <label for="node-config-input-showProgress" style="width: auto" class="unset-max-width" data-i18n="olcnr-connect-server.showProgress.label"></label>
+  </div>
+
+  <div class="form-row">
+    <label for="node-config-input-name">
+      <i class="fa fa-tag"></i>
+      <span data-i18n="olcnr-connect-server.name.label">Name</span>
+    </label>
+    <input type="text" id="node-config-input-name" data-i18n="[placeholder]olcnr-connect-server.name.placeholder">
+  </div>
+
+</script>
+<script type="text/javascript">
+(function () {
+    'use strict';
+
+    function validateURLByProtocol(value) {
+        try {
+            const url = new URL(value);
+            return url.protocol === "http:" || url.protocol === "https:";
+        }
+        catch (_a) {
+            return false;
+        }
+    }
+
+    const NODE_NAME = "OL Connect Server";
+    RED.nodes.registerType(NODE_NAME, {
+        category: "config",
+        defaults: {
+            url: {
+                value: "http://localhost:9340",
+                required: true,
+                validate: function (value) {
+                    return validateURLByProtocol(value);
+                }
+            },
+            ignorecer: {
+                value: false
+            },
+            name: {
+                value: ""
+            },
+            disableProgress: {
+                value: false
+            },
+            concurrentRate: {
+                value: 30,
+                validate: function (value) {
+                    if (value === undefined)
+                        return true;
+                    const _val = Number(value);
+                    return !isNaN(_val) && Number.isInteger(_val) && _val >= 15 && _val <= 100;
+                }
+            }
+        },
+        credentials: {
+            username: {
+                type: "text"
+            },
+            password: {
+                type: "password"
+            }
+        },
+        oneditprepare() {
+            $("#node-config-input-showProgress").prop("checked", !this.disableProgress);
+            if (this.concurrentRate === undefined) {
+                $("#node-config-input-concurrentRate").val(30);
+            }
+        },
+        oneditsave() {
+            this.disableProgress = !$("#node-config-input-showProgress").is(":checked");
+        },
+        label: function () {
+            try {
+                const url = new URL(this.url);
+                const baseName = this.name || "";
+                if (baseName.length > 0)
+                    return baseName;
+                else
+                    return `${url.hostname}`;
+            }
+            catch (_a) {
+                return this.name || NODE_NAME;
+            }
+        }
+    });
+    let newNodes = [];
+    let timeout;
+    function destroyDialog(dialog) {
+        dialog.dialog("destroy");
+        dialog.remove();
+        RED.view.focus();
+    }
+    function createDialog(options) {
+        return $('<div class="hide ui-dialog-content ui-widget-content"><form class="dialog-form form-horizontal"></form></div>')
+            .appendTo("#red-ui-editor")
+            .dialog({
+            modal: true,
+            autoOpen: false,
+            width: 700,
+            minHeight: 400,
+            resizable: false,
+            title: options.title,
+            close: options.close,
+            classes: {
+                "ui-dialog": "red-ui-editor-dialog",
+                "ui-dialog-titlebar-close": "hide",
+                "ui-widget-overlay": "red-ui-editor-dialog"
+            },
+            buttons: options.buttons
+        });
+    }
+    const ns = "@objectif-lune/connect-rest-client/olcnr-connect-server";
+    RED.events.on("nodes:add", (node) => {
+        var _a;
+        if (!("changed" in node) || node.changed !== true || !("_config" in node))
+            return;
+        if ("_def" in node) {
+            const nodeDefinition = node._def;
+            if (((_a = nodeDefinition.defaults) === null || _a === undefined ? undefined : _a.connect_server) &&
+                typeof nodeDefinition.defaults.connect_server === "object" &&
+                nodeDefinition.defaults.connect_server.type === NODE_NAME) {
+                newNodes.push(node);
+                if (timeout) {
+                    clearInterval(timeout);
+                }
+                timeout = setTimeout(() => {
+                    if (newNodes.length < 4) {
+                        newNodes = [];
+                        return;
+                    }
+                    const timeToCloseNotification = 4000;
+                    const myNotification = RED.notify(RED._(`${ns}:olcnr-connect-server.change-server.notification-message`, {
+                        length: newNodes.length
+                    }), {
+                        modal: true,
+                        fixed: false,
+                        timeout: timeToCloseNotification,
+                        buttons: [
+                            {
+                                text: RED._("common.label.cancel"),
+                                click() {
+                                    clearNotification();
+                                    myNotification.close();
+                                }
+                            },
+                            {
+                                text: RED._(`${ns}:olcnr-connect-server.change-server.change`),
+                                class: "primary",
+                                click() {
+                                    var _a, _b;
+                                    let configSelect = undefined;
+                                    let treeList = undefined;
+                                    function onChange() {
+                                        if (configSelect &&
+                                            !!configSelect.val() &&
+                                            treeList &&
+                                            treeList.treeList("data").some((item) => !!item.selected)) {
+                                            $("#red-ui-change-server-dialog-ok").button("enable");
+                                        }
+                                        else {
+                                            $("#red-ui-change-server-dialog-ok").button("disable");
+                                        }
+                                    }
+                                    const dialog = createDialog({
+                                        title: RED._(`${ns}:olcnr-connect-server.change-server.title`),
+                                        close: () => destroyDialog(dialog),
+                                        buttons: [
+                                            {
+                                                id: "red-ui-change-server-dialog-cancel",
+                                                text: RED._("common.label.cancel"),
+                                                click: () => destroyDialog(dialog)
+                                            },
+                                            {
+                                                id: "red-ui-change-server-dialog-ok",
+                                                class: "primary",
+                                                text: RED._("common.label.ok"),
+                                                click: function () {
+                                                    var _a;
+                                                    const selectedConnectServer = (_a = configSelect === null || configSelect === undefined ? undefined : configSelect.val()) === null || _a === undefined ? undefined : _a.toString();
+                                                    if (!selectedConnectServer)
+                                                        return;
+                                                    treeList === null || treeList === undefined ? undefined : treeList.treeList("data").forEach((item) => {
+                                                        if (!item.selected)
+                                                            return;
+                                                        const node = (item.id
+                                                            ? RED.nodes.node(item.id)
+                                                            : undefined);
+                                                        if (node) {
+                                                            RED.nodes.updateConfigNodeUsers(node, {
+                                                                action: "remove",
+                                                                emitEvent: false
+                                                            });
+                                                            node.connect_server = selectedConnectServer;
+                                                            RED.nodes.updateConfigNodeUsers(node, {
+                                                                action: "add",
+                                                                emitEvent: true
+                                                            });
+                                                            RED.events.emit("nodes:change", node);
+                                                        }
+                                                    });
+                                                    destroyDialog(dialog);
+                                                    RED.sidebar.config.refresh();
+                                                }
+                                            }
+                                        ]
+                                    });
+                                    const dialogContainer = dialog.children(".dialog-form");
+                                    const treeListFormDiv = $(`<div class="form-row"></div>`).appendTo(dialogContainer);
+                                    treeList = $("<div/>", {
+                                        class: "change-server-list"
+                                    })
+                                        .css({
+                                        "min-height": "400px",
+                                        width: "100%",
+                                        height: "100%"
+                                    })
+                                        .appendTo(treeListFormDiv)
+                                        .treeList({
+                                        data: newNodes.map((node) => ({
+                                            element: RED.utils
+                                                .createNodeIcon(node, true)
+                                                .css({ "margin-left": "4px" }),
+                                            checkbox: true,
+                                            id: node.id
+                                        }))
+                                    })
+                                        .on("treelistselect", onChange);
+                                    treeList.trigger("treelistselect");
+                                    const treeListContainer = treeList.find(".red-ui-editableList-border.red-ui-editableList-container");
+                                    const selectAllCheckbox = $("<input />", {
+                                        type: "checkbox",
+                                        class: "red-ui-treeList-checkbox"
+                                    }).on("change", function () {
+                                        if (!treeList)
+                                            return;
+                                        treeList.treeList("data", treeList.treeList("data").map((item) => (Object.assign(Object.assign({}, item), { selected: $(this).is(":checked") }))));
+                                    });
+                                    $("<div />", {
+                                        class: "red-ui-treeList-label"
+                                    })
+                                        .css({
+                                        background: "var(--red-ui-secondary-background)",
+                                        "border-bottom": "1px solid var(--red-ui-primary-border-color)",
+                                        "padding-left": "6px",
+                                        "line-height": "1.5"
+                                    })
+                                        .prependTo(treeListContainer)
+                                        .append($("<span />", {
+                                        class: "red-ui-treeList-icon"
+                                    })
+                                        .css({
+                                        display: "flex",
+                                        "flex-shrink": "unset",
+                                        "margin-left": "3px"
+                                    })
+                                        .append(selectAllCheckbox), $("<span />", {
+                                        class: "red-ui-node-icon-container"
+                                    })
+                                        .css({
+                                        width: "calc(100% - 20px)",
+                                        "margin-left": "-4px"
+                                    })
+                                        .append($("<div />", {
+                                        class: "red-ui-node-label"
+                                    }).html(RED._(`${ns}:olcnr-connect-server.change-server.nodes`))));
+                                    treeList.on("treelistselect", function () {
+                                        if (!treeList)
+                                            return;
+                                        const isAllChecked = treeList
+                                            .treeList("data")
+                                            .every((item) => !!item.selected);
+                                        const isSomeChecked = treeList
+                                            .treeList("data")
+                                            .some((item) => !!item.selected);
+                                        selectAllCheckbox.prop("checked", isAllChecked);
+                                        selectAllCheckbox.prop("indeterminate", isSomeChecked && !isAllChecked);
+                                    });
+                                    const configurationListFormDiv = $(`<div class="form-row"></div>`).appendTo(dialogContainer);
+                                    $(`<label><i class='fa fa-globe'></i> <span data-i18n='${ns}:olcnr-connect-server.server.label'></span></label>`)
+                                        .appendTo(configurationListFormDiv)
+                                        .i18n();
+                                    const selectConfigDiv = $("<div style='width: 70%; display: inline-flex;'><select class='node-input-connect_server' style='flex-grow: 1;'></select></div>").appendTo(configurationListFormDiv);
+                                    configSelect = selectConfigDiv
+                                        .children("select")
+                                        .val("")
+                                        .on("change", onChange)
+                                        .append($("<option>", {
+                                        value: ""
+                                    }).text(RED._(`${ns}:olcnr-connect-server.server.select-server`)));
+                                    RED.nodes.eachConfig((_conf) => {
+                                        const conf = _conf;
+                                        if ("type" in conf && conf.type === NODE_NAME) {
+                                            configSelect === null || configSelect === undefined ? undefined : configSelect.append($("<option>", {
+                                                value: conf.id
+                                            }).text(conf.name || RED.utils.getNodeLabel(conf)));
+                                        }
+                                        return true;
+                                    });
+                                    dialog.dialog("open");
+                                    myNotification.close();
+                                    treeListFormDiv.css({
+                                        height: `${Math.max((_a = dialog.height()) !== null && _a !== undefined ? _a : 0, 400) -
+                                        Math.max((_b = configurationListFormDiv.height()) !== null && _b !== undefined ? _b : 0, 30)}px`
+                                    });
+                                    clearNotification();
+                                }
+                            }
+                        ]
+                    });
+                    const closeNotificationEvent = (event) => {
+                        if (event.key == "Escape") {
+                            clearNotification();
+                            myNotification.close();
+                        }
+                    };
+                    const clearNotification = () => {
+                        newNodes = [];
+                        $(document).off("keydown", closeNotificationEvent);
+                    };
+                    $(document).on("keydown", closeNotificationEvent);
+                    setTimeout(() => {
+                        clearNotification();
+                    }, timeToCloseNotification);
+                }, 10);
+            }
+        }
+        const nodeLabel = RED.utils.getNodeLabel(node);
+        if (node.type === NODE_NAME && nodeLabel) {
+            const existingConfigNodes = [];
+            RED.nodes.eachConfig((_node) => {
+                const configNode = _node;
+                const configNodeLabel = RED.utils.getNodeLabel(configNode);
+                if (configNode.type === NODE_NAME &&
+                    configNode.id !== node.id &&
+                    (configNodeLabel === nodeLabel || configNodeLabel.startsWith(`${nodeLabel} #`))) {
+                    existingConfigNodes.push(configNodeLabel);
+                }
+                return true;
+            });
+            if (existingConfigNodes.length > 0) {
+                const lastConfigNode = existingConfigNodes.sort((a, b) => b.localeCompare(a))[0];
+                let nodeNumber = existingConfigNodes.length;
+                const lastDelimiter = lastConfigNode.lastIndexOf("#");
+                if (lastDelimiter >= nodeLabel.length && lastDelimiter < lastConfigNode.length) {
+                    const newNodeNumber = parseInt(lastConfigNode.substring(lastDelimiter + 1)) + 1;
+                    if (!Number.isNaN(newNodeNumber)) {
+                        nodeNumber = newNodeNumber;
+                    }
+                }
+                node.name = `${nodeLabel} #${nodeNumber}`;
+            }
+        }
+    });
+
+})();
+</script>
