@@ -311,7 +311,12 @@ class OLConnectRestClient {
     }
     getProgressOfOperation(url, logger) {
         const OKHandler = {
-            handler: (response) => response.body.ready.then(() => response.body.text)
+            handler: (response) => response.body.ready.then(() => response.body.text).then((txt) => {
+                // Patched: log the actual response body (e.g. "79", "done") instead of
+                // just the byte count. Diagnostic only — no behavioural change.
+                try { (logger ?? this.#logger).info('getProgress body:', txt); } catch (e) {}
+                return txt;
+            })
         };
         // Patched: 404 = OLC removed the operation from the active list (= done).
         // Returning "done" lets waitForDone resolve and chain to resultCall
