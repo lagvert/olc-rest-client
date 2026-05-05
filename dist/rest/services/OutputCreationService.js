@@ -31,8 +31,8 @@ class OutputCreationService extends ConnectService.ConnectService {
         const AcceptedHandler = {
             handler: (response) => {
                 const operationDefinition = this.olConnectRestClient.createOperationDefinition(response, OUTPUT_CONTENT_CREATION_PATH, (operationId) => payload.createOnly
-                    ? this.fetchOperationResultAsFolderAndFilenames(operationId)
-                    : this.fetchOperationResult(operationId));
+                    ? this.fetchOperationResult(operationId)
+                    : this.fetchOperationResultAsFolderAndFilenames(operationId));
                 return Promise.resolve(operationDefinition);
             }
         };
@@ -67,8 +67,8 @@ class OutputCreationService extends ConnectService.ConnectService {
         const AcceptedHandler = {
             handler: (response) => {
                 const operationDefinition = this.olConnectRestClient.createOperationDefinition(response, OUTPUT_CONTENT_CREATION_PATH, (operationId) => payload.createOnly
-                    ? this.fetchOperationResultAsFolderAndFilenames(operationId)
-                    : this.fetchOperationResult(operationId));
+                    ? this.fetchOperationResult(operationId)
+                    : this.fetchOperationResultAsFolderAndFilenames(operationId));
                 return Promise.resolve(operationDefinition);
             }
         };
