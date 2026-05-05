@@ -313,12 +313,17 @@ class OLConnectRestClient {
         const OKHandler = {
             handler: (response) => response.body.ready.then(() => response.body.text)
         };
+        // Patched: 404 = OLC removed the operation from the active list (= done).
+        // Returning "done" lets waitForDone resolve and chain to resultCall
+        // (= getResult / getManagedResult), which then returns the actual result.
+        const NotFoundAsDone = { handler: () => Promise.resolve('done') };
         return this.requestWithToken({
             request: new core.GetRequest(url, undefined, undefined, {
                 Accept: core.HttpContentType.TEXT
             }),
             responseHandlers: {
-                [core.HttpResponseCodes.OK]: OKHandler
+                [core.HttpResponseCodes.OK]: OKHandler,
+                [core.HttpResponseCodes.NOT_FOUND]: NotFoundAsDone
             }
         }, logger);
     }
