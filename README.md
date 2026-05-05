@@ -1,46 +1,76 @@
-﻿# OL Connect REST client
+# @objectif-lune/connect-rest-client
 
-This package implements the REST calls to the OL Connect server. The OL Connect REST API reference can be found in [the cookbook](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference.html "OL Connect REST API cookbook")
+Patched fork of [`@objectif-lune/connect-rest-client`](https://www.npmjs.com/package/@objectif-lune/connect-rest-client) v1.0.1.
 
-## Public API methods
-Within the root directory of the package there is a README.md file for each of the public API endpoints used by the OL Connect nodes. These can be accessed by viewing the package source using the Code tab on this NPM page. Alternatively the links below point to the online API cookbook where full details of the request and response objects as well as API endpoints can be found.
+The upstream package is shipped as compiled `dist/` only (no public source repo accessible at the documented Bitbucket URL). This repo vendors the compiled distribution and applies fixes for bugs encountered in production use.
 
-* [All in One](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/All-In-One_Service/Process_All-In-One_(JSON).html)
-* [File Store Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/File_Store_Service/Download_Managed_File_or_Directory.html)
-* [Data Mapping Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Data_Mapping_Service/Process_Data_Mapping_(JSON).html)
-* [Output Creation Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Output_Creation_Service/Process_Output_Creation_(By_Job_Set)_(JSON).html
-* [Content Item Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Content_Item_Entity_Service/Get_Data_Record_for_Content_Item.html)
-* [Content Set Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Content_Set_Entity_Service/Get_All_Content_Sets.html)
-* [Data Record Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Data_Record_Entity_Service/Add_Data_Records.html)
-* [Data Set Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Data_Set_Entity_Service/Get_All_Data_Sets.html)
-* [Document Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Document_Entity_Service/Get_Document_Metadata_Properties.html)
-* [Document Set Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Document_Set_Entity_Service/Get_Documents_for_Document_Set.html)
-* [Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Entity_Service/Find_Data_Entity.html)
-* [Job Creation Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Job_Creation_Service/Get_Result_of_Operation.html)
-* [Job Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Job_Entity_Service/Get_Content_Items_for_Job.html)
-* [Job Segment Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Job_Segment_Entity_Service/Get_Document_Sets_for_Job_Segment.html)
-* [Job Set Entity Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Job_Set_Entity_Service/Get_All_Job_Sets.html)
-* [Creation Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Content_Creation_Service/Create_Preview_PDF_(By_Data)_(JSON).html)
-* [Content Creation (Email) Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Content_Creation_(Email)_Service/Process_Content_Creation_(By_Data_Record)_(JSON).html)
-* [Content Creation (HTML) Service](https://help.uplandsoftware.com/objectiflune/en/olconnect-api/2025.2/Cookbook/REST_API_Reference/Content_Creation_(HTML)_Service/Process_Content_Creation_(By_Data)_(JSON).html)
+## Why a fork
 
-## Support
-OL Connect Automate is supported through the [OL Care program](https://uplandsoftware.com/objectiflune/customer-support-and-resources/). Feel free to visit the [OL Connect Automate forum](https://olforum.uplandsoftware.com/c/olcnrs/38) to post questions, comments and suggestions.
+Six bugs in the upstream lib at v1.0.1, all confirmed against a live OLC Connect server:
 
-## License
-Copyright 2025 Upland Software Inc.
+| # | File | Bug | Fix |
+|---|---|---|---|
+| 1 | `dist/rest/services/OutputCreationService.js` | `payload.createOnly` ternary inverted — calls `fetchOperationResultAsFolderAndFilenames` when `createOnly:true` and vice versa | Swap branches |
+| 2 | `dist/rest/services/DocumentEntityService.js` | `fetchDocumentMetadata` builds `/entity/documents/{id}` instead of `/entity/documents/{id}/metadata` → 404 from server | Append `/metadata` to path |
+| 3 | `dist/rest/services/DocumentSetEntityService.js` | Same `/metadata` suffix missing for document-set metadata | Append `/metadata` to path |
+| 4 | `dist/api/OLConnectRestClient.js` | `getProgressOfOperation` only registers HTTP 200 handler; HTTP 404 (operation removed from active list = done) throws `ServerStatusCodeNotExpected` instead of completing | Register 404 handler returning `"done"` so the lib's `waitForDone` chains correctly to `getResult` |
+| 5 | `dist/api/OLConnectRestClient.js` | `getProgressOfOperation` logs only `"X bytes"` for the response — actual progress value invisible | Wrap OK handler to log the response body |
+| 6 | `dist/utilities/connect/conversions/flattenNameValueList.js` | `flattenNameValueList` smart-casts string values to Number/Date based on regex tests. Destroys: 44-char DMC codes (`Number.MAX_SAFE_INTEGER` overflow), `"00000000"` IDs (leading-zero loss), `"021246535"` sequence numbers (padding loss). API spec defines `value` as type `string` — coercion violates the contract | Pass through untouched: `result[name] = value`. Consumers convert if needed |
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-and associated documentation files (the "Software"), to deal in the Software without restriction, 
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
-subject to the following conditions:
+## Usage
 
-The above copyright notice and this permission notice shall be included in all copies or substantial 
-portions of the Software.
+```json
+{
+  "dependencies": {
+    "@objectif-lune/connect-rest-client": "github:lagvert/olc-rest-client#v1.0.1-fork.1"
+  }
+}
+```
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT 
-LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Or pin to a specific tag for reproducibility.
+
+API surface is identical to the upstream package — drop-in replacement.
+
+## Compatibility
+
+- Node 20.19.5+ (matches upstream `engines`)
+- TypeScript types in `dist/@types/`
+
+### OL Connect server compatibility
+
+The patches address client-side bugs. The relevant server endpoint behaviours have been verified across OL Connect 2021.2 and 2024.2 production servers. The published REST API release notes from 2021.2 through 2026.1 contain no documented changes that would contradict the patches in this fork.
+
+| Bug | Server behaviour 2021.2 | Server behaviour 2024.2 | Future risk (2026.1+) |
+|---|---|---|---|
+| 1 — `createOnly` ternary | n/a — pure client | n/a — pure client | none, lib-internal |
+| 2 — missing `/metadata` suffix | confirmed: missing suffix → HTTP 404 | confirmed: missing suffix → HTTP 404 | stable since 2018+ |
+| 3 — DocumentSet `/metadata` | as Bug 2 | as Bug 2 | as Bug 2 |
+| 4 — `getProgress` returns 404 once op completes | confirmed | confirmed | stable |
+| 5 — log format (cosmetic) | n/a — pure client | n/a — pure client | irrelevant |
+| 6 — `flattenNameValueList` smart-cast | server returns spec-compliant strings | server returns spec-compliant strings | stable, purely client-side |
+
+### REST API changes by OL Connect version (summary 2021.2 → 2026.1)
+
+| Version | Documented REST API change |
+|---|---|
+| 2021.2 | HTML/Email content creation: better status codes (400 instead of 500). `/entity/datarecords/values?optimized=true` encoding fix. |
+| 2022.1 | `Content-Disposition` header added to FileStore download endpoints. |
+| 2022.2 | "Convert DM records to simplified JSON" option (DataMapping output). |
+| 2023.1 | All-in-one print can now return `xxxSetID(s)`. Search restriction on DataSets/ContentSets/JobSets. |
+| 2023.2 | No documented REST API changes. |
+| 2024.1 | New endpoint `/workflow/jobcreation/default/{contentSetId}` (job creation without preset). New endpoint `/statistics/jobset/{jobSetId}` with document tags. CORS configuration option. |
+| 2024.2 | `getOperations` returns Managed File Name+ID. `jobOutputFolder` parameter for Output Creation. JobSet statistics levels. New Filestore RuntimeParameter endpoints. **REST API restricted to localhost by default** (configurable). HttpOnly cookies. |
+| 2025.1 | Document set properties in Job Statistics. Stack overflow fix on excessive REST calls. **Auth rate limiting** added. |
+| 2025.2.3 | **`Output Creation Get Result of Operation (as Text)` endpoint now restricted to `Content-Type: text/plain`** (95317). The lib already sends this content type — fork remains compatible. Concurrent Job Statistics fix. New PostScript→PDF endpoint. |
+| 2026.1 | OpenAPI/Swagger documentation introduced at `http://localhost:9340/serverengine/doc/`. XPS→PDF converter endpoint. Thumbnail handling improvements. |
+
+## Upstream attribution
+
+Original code © Upland Software Inc., MIT licensed. See LICENSE for full notice.
+
+The fork modifications are listed in `CHANGELOG.md`. To compare with upstream: `npm pack @objectif-lune/connect-rest-client@1.0.1` and diff `dist/`.
+
+## Caveats
+
+- This fork is shipped as compiled `dist/` only. There is no TypeScript source repository — patches were applied directly to the compiled JS by inspecting the bundled output.
+- node-red integration files (`dist/nodes/`) have been removed because they were not relevant for our use case.
